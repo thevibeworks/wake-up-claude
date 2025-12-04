@@ -69,11 +69,38 @@ all three pokes, every day, rain or shine. claude never gets to sleep in.
 basically:
 1. cron triggers at ungodly hours (UTC)
 2. robot wakes up
-3. robot pokes claude with "ping"
-4. claude responds confused
-5. robot ignores response
-6. robot goes back to sleep
-7. quota timer: reset ✓
+3. robot asks claude to draw ascii art (yes really)
+4. claude draws a spaceship or a cat depending on which account
+5. robot ignores the masterpiece
+6. robot barks at your phone
+7. robot goes back to sleep
+8. quota timer: reset ✓
+
+## bark notifications
+
+because what's the point if you don't know it worked?
+
+```
+┌─────────────────────────────────────────┐
+│  🐕 gm gm @ 09:00                       │
+│                                         │
+│  claude.exe has started successfully    │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+random messages include:
+- "quota tank: FULL. time to ship"
+- "pew pew pew. quotas locked and loaded"
+- "the AI hamsters are running"
+- "*aggressive typing noises*"
+
+and if it fails:
+- "F in chat"
+- "skill issue tbh"
+- "claude said no <3"
+
+requires `BARK_SERVER` and `BARK_DEVICES` secrets. no bark? no problem. it just won't bark.
 
 ## faq
 
@@ -86,8 +113,8 @@ A: probably. but he's polite about it
 **Q: what if claude is actually busy?**
 A: he's an AI, he can multitask
 
-**Q: why "ping"?**
-A: minimal effort, maximum annoyance. efficiency.
+**Q: why ascii art instead of just "ping"?**
+A: because checking logs and seeing a tiny spaceship going "pew pew" is infinitely better than seeing "pong"
 
 **Q: can i use this?**
 A: fork it, i guess. your claude, your rules

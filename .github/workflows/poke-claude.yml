@@ -79,41 +79,73 @@ jobs:
     needs: poke
     if: always() && (inputs.bark != false)
     runs-on: ubuntu-latest
-    name: woof woof (bark notify)
+    name: "${{ needs.poke.result == 'success' && '🐕 WOOF' || '💀 ded' }}"
     steps:
-      - name: bark the results
+      - name: unleash the hounds
         env:
           BARK_SERVER: ${{ secrets.BARK_SERVER }}
           BARK_DEVICES: ${{ secrets.BARK_DEVICES }}
           POKE_RESULT: ${{ needs.poke.result }}
         run: |
-          # skip if no bark config
           if [ -z "$BARK_SERVER" ] || [ -z "$BARK_DEVICES" ]; then
-            echo "no bark config, skipping notification"
+            echo "no bark server configured, sad dog noises"
             exit 0
           fi
 
           NOW=$(TZ="Asia/Shanghai" date "+%H:%M")
+          HOUR=$(TZ="Asia/Shanghai" date "+%H")
 
-          if [ "$POKE_RESULT" = "success" ]; then
-            TITLE="🐕 quota ready @ $NOW"
-            BODY="all accounts poked successfully"
+          # success messages - chaotic energy
+          SUCCESS_MSGS=(
+            "claude is AWAKE and ready to vibe"
+            "quota tank: FULL. time to ship"
+            "both claudes stretching... let's go"
+            "pew pew pew. quotas locked and loaded"
+            "the AI hamsters are running"
+            "*aggressive typing noises*"
+            "claude.exe has started successfully"
+            "beep boop. humans may now vibe code"
+          )
+
+          # fail messages - dramatic
+          FAIL_MSGS=(
+            "claude is still sleeping smh"
+            "the hamsters stopped running"
+            "quota machine broke"
+            "F in chat"
+            "skill issue tbh"
+            "claude said no <3"
+          )
+
+          # time-based greetings
+          if [ "$HOUR" -lt 10 ]; then
+            GREETING="gm gm"
+          elif [ "$HOUR" -lt 15 ]; then
+            GREETING="afternoon grind"
           else
-            TITLE="🐕 poke failed @ $NOW"
-            BODY="check workflow for details"
+            GREETING="night owl mode"
           fi
 
-          # url encode
-          TITLE_ENC=$(printf '%s' "$TITLE" | jq -sRr @uri)
-          BODY_ENC=$(printf '%s' "$BODY" | jq -sRr @uri)
+          # pick random message
+          if [ "$POKE_RESULT" = "success" ]; then
+            MSG="${SUCCESS_MSGS[$((RANDOM % ${#SUCCESS_MSGS[@]}))]}"
+            TITLE="$GREETING @ $NOW"
+          else
+            MSG="${FAIL_MSGS[$((RANDOM % ${#FAIL_MSGS[@]}))]}"
+            TITLE="bruh @ $NOW"
+          fi
 
-          # bark each device
+          TITLE_ENC=$(printf '%s' "$TITLE" | jq -sRr @uri)
+          BODY_ENC=$(printf '%s' "$MSG" | jq -sRr @uri)
+
           IFS=',' read -ra DEVICES <<< "$BARK_DEVICES"
           for device in "${DEVICES[@]}"; do
             device=$(echo "$device" | xargs)
-            URL="${BARK_SERVER}/${device}/${TITLE_ENC}/${BODY_ENC}?group=quota&icon=https://claude.ai/favicon.ico"
-            echo "barking to device..."
-            curl -s "$URL" || echo "bark failed"
+            curl -s "${BARK_SERVER}/${device}/${TITLE_ENC}/${BODY_ENC}?group=quota&icon=https://claude.ai/favicon.ico" || true
           done
 
-          echo "woof!"
+          echo ""
+          echo "  /\\_/\\"
+          echo " ( o.o )  $MSG"
+          echo "  > ^ <"
+          echo ""
