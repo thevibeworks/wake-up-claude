@@ -1,0 +1,4 @@
+# secrets go in github, not here
+.env
+*.secret
+claude-tears.txt

@@ -1,0 +1,68 @@
+# the claude poking machine
+# runs 3x daily to annoy claude into resetting quota
+
+name: poke claude
+
+on:
+  schedule:
+    # asia/shanghai times (UTC+8)
+    # 09:00 CST = 01:00 UTC - morning poke
+    # 14:00 CST = 06:00 UTC - afternoon poke
+    # 19:00 CST = 11:00 UTC - evening poke
+    - cron: "0 1,6,11 * * *"
+
+  workflow_dispatch:
+    inputs:
+      victim:
+        description: "who to poke"
+        required: false
+        default: "everyone"
+        type: choice
+        options:
+          - everyone
+          - max5x
+          - pro
+      dry_run:
+        description: "pretend to poke (for testing)"
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  poke:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - victim: max5x
+            name: "the fancy one"
+          - victim: pro
+            name: "the regular one"
+
+    name: poking ${{ matrix.name }}
+
+    steps:
+      - name: should we poke this one?
+        id: check
+        run: |
+          TARGET="${{ inputs.victim || 'everyone' }}"
+          CURRENT="${{ matrix.victim }}"
+          if [ "$TARGET" = "everyone" ] || [ "$TARGET" = "$CURRENT" ]; then
+            echo "poke=true" >> $GITHUB_OUTPUT
+            echo "🎯 $CURRENT is getting poked"
+          else
+            echo "poke=false" >> $GITHUB_OUTPUT
+            echo "😴 $CURRENT gets to sleep"
+          fi
+
+      - name: poke poke poke
+        if: steps.check.outputs.poke == 'true'
+        uses: thevibeworks/claude-quota-scheduler@v1
+        with:
+          account_name: ${{ matrix.victim }}
+          oauth_token: ${{ secrets[format('CLAUDE_OAUTH_{0}', matrix.victim)] }}
+          timezone: "Asia/Shanghai"
+          ping_prompt: "ping"
+          dry_run: ${{ inputs.dry_run || 'false' }}
+          summary_style: "ascii-art"
