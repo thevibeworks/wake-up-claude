@@ -42,10 +42,10 @@ jobs:
         include:
           - victim: max5x
             name: "the fancy one"
-            poke_style: "draw a tiny ascii art of a mass-effect style spaceship, max 5 lines. include pew pew"
+            poke_style: "draw tiny spaceship ascii (4 lines max, include pew pew). end with one unhinged roast."
           - victim: pro
             name: "the regular one"
-            poke_style: "draw a tiny ascii cat stretching after a nap, max 4 lines"
+            poke_style: "draw tiny stretching cat ascii (4 lines max). end with one savage roast."
 
     name: poking ${{ matrix.name }}
 
