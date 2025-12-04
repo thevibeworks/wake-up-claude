@@ -37,8 +37,10 @@ jobs:
         include:
           - victim: max5x
             name: "the fancy one"
+            poke_style: "draw a tiny ascii art of a mass-effect style spaceship, max 5 lines. include pew pew"
           - victim: pro
             name: "the regular one"
+            poke_style: "draw a tiny ascii cat stretching after a nap, max 4 lines"
 
     name: poking ${{ matrix.name }}
 
@@ -63,6 +65,6 @@ jobs:
           account_name: ${{ matrix.victim }}
           oauth_token: ${{ secrets[format('CLAUDE_OAUTH_{0}', matrix.victim)] }}
           timezone: "Asia/Shanghai"
-          ping_prompt: "ping"
+          ping_prompt: ${{ matrix.poke_style }}
           dry_run: ${{ inputs.dry_run || 'false' }}
           summary_style: "ascii-art"
