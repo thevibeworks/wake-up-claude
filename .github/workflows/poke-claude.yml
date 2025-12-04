@@ -79,37 +79,28 @@ jobs:
         if: steps.check.outputs.poke == 'true' && (inputs.bark != false)
         env:
           BARK_SERVER: ${{ secrets.BARK_SERVER }}
-          BARK_DEVICES: ${{ secrets.BARK_DEVICES }}
+          BARK_KEY: ${{ secrets.BARK_KEY }}
           BARK_MSG: ${{ steps.poke.outputs.bark_message }}
           VICTIM: ${{ matrix.victim }}
           SUCCESS: ${{ steps.poke.outputs.success }}
         run: |
-          if [ -z "$BARK_SERVER" ] || [ -z "$BARK_DEVICES" ]; then
-            echo "no bark config, sad dog noises"
+          if [ -z "$BARK_SERVER" ] || [ -z "$BARK_KEY" ]; then
+            echo "no bark config (need BARK_SERVER and BARK_KEY secrets)"
             exit 0
           fi
 
+          # install barkme.sh
+          curl -fsSL https://raw.githubusercontent.com/thevibeworks/yolo-tools/main/src/bin/barkme.sh -o /tmp/barkme.sh
+          chmod +x /tmp/barkme.sh
+
           NOW=$(TZ="Asia/Shanghai" date "+%H:%M")
+          BODY="${BARK_MSG:-woke up}"
 
           if [ "$SUCCESS" = "true" ]; then
-            TITLE="$VICTIM @ $NOW"
+            /tmp/barkme.sh -t "$VICTIM @ $NOW" -g "quota" -i "https://claude.ai/favicon.ico" "$BODY"
           else
-            TITLE="$VICTIM ded @ $NOW"
+            /tmp/barkme.sh -t "$VICTIM ded @ $NOW" -g "quota" -l "timeSensitive" "$BODY"
           fi
-
-          # use claude's message, fallback if empty
-          BODY="${BARK_MSG:-claude said something but idk what}"
-
-          TITLE_ENC=$(printf '%s' "$TITLE" | jq -sRr @uri)
-          BODY_ENC=$(printf '%s' "$BODY" | jq -sRr @uri)
-
-          IFS=',' read -ra DEVICES <<< "$BARK_DEVICES"
-          for device in "${DEVICES[@]}"; do
-            device=$(echo "$device" | xargs)
-            curl -s "${BARK_SERVER}/${device}/${TITLE_ENC}/${BODY_ENC}?group=quota&icon=https://claude.ai/favicon.ico" || true
-          done
-
-          echo "barked: $BODY"
 
   # each account barks for itself now with claude-generated messages
   # this job just shows overall status in the workflow UI
