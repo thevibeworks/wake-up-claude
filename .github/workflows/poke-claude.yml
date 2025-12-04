@@ -27,6 +27,11 @@ on:
         required: false
         default: false
         type: boolean
+      bark:
+        description: "send bark notification"
+        required: false
+        default: true
+        type: boolean
 
 jobs:
   poke:
@@ -59,6 +64,7 @@ jobs:
           fi
 
       - name: poke poke poke
+        id: poke
         if: steps.check.outputs.poke == 'true'
         uses: thevibeworks/claude-quota-scheduler@v1
         with:
@@ -68,3 +74,46 @@ jobs:
           ping_prompt: ${{ matrix.poke_style }}
           dry_run: ${{ inputs.dry_run || 'false' }}
           summary_style: "ascii-art"
+
+  bark:
+    needs: poke
+    if: always() && (inputs.bark != false)
+    runs-on: ubuntu-latest
+    name: woof woof (bark notify)
+    steps:
+      - name: bark the results
+        env:
+          BARK_SERVER: ${{ secrets.BARK_SERVER }}
+          BARK_DEVICES: ${{ secrets.BARK_DEVICES }}
+          POKE_RESULT: ${{ needs.poke.result }}
+        run: |
+          # skip if no bark config
+          if [ -z "$BARK_SERVER" ] || [ -z "$BARK_DEVICES" ]; then
+            echo "no bark config, skipping notification"
+            exit 0
+          fi
+
+          NOW=$(TZ="Asia/Shanghai" date "+%H:%M")
+
+          if [ "$POKE_RESULT" = "success" ]; then
+            TITLE="🐕 quota ready @ $NOW"
+            BODY="all accounts poked successfully"
+          else
+            TITLE="🐕 poke failed @ $NOW"
+            BODY="check workflow for details"
+          fi
+
+          # url encode
+          TITLE_ENC=$(printf '%s' "$TITLE" | jq -sRr @uri)
+          BODY_ENC=$(printf '%s' "$BODY" | jq -sRr @uri)
+
+          # bark each device
+          IFS=',' read -ra DEVICES <<< "$BARK_DEVICES"
+          for device in "${DEVICES[@]}"; do
+            device=$(echo "$device" | xargs)
+            URL="${BARK_SERVER}/${device}/${TITLE_ENC}/${BODY_ENC}?group=quota&icon=https://claude.ai/favicon.ico"
+            echo "barking to device..."
+            curl -s "$URL" || echo "bark failed"
+          done
+
+          echo "woof!"
