@@ -75,68 +75,33 @@ jobs:
           dry_run: ${{ inputs.dry_run || 'false' }}
           summary_style: "ascii-art"
 
-  bark:
-    needs: poke
-    if: always() && (inputs.bark != false)
-    runs-on: ubuntu-latest
-    name: "${{ needs.poke.result == 'success' && '🐕 WOOF' || '💀 ded' }}"
-    steps:
-      - name: unleash the hounds
+      - name: bark this one
+        if: steps.check.outputs.poke == 'true' && (inputs.bark != false)
         env:
           BARK_SERVER: ${{ secrets.BARK_SERVER }}
           BARK_DEVICES: ${{ secrets.BARK_DEVICES }}
-          POKE_RESULT: ${{ needs.poke.result }}
+          BARK_MSG: ${{ steps.poke.outputs.bark_message }}
+          VICTIM: ${{ matrix.victim }}
+          SUCCESS: ${{ steps.poke.outputs.success }}
         run: |
           if [ -z "$BARK_SERVER" ] || [ -z "$BARK_DEVICES" ]; then
-            echo "no bark server configured, sad dog noises"
+            echo "no bark config, sad dog noises"
             exit 0
           fi
 
           NOW=$(TZ="Asia/Shanghai" date "+%H:%M")
-          HOUR=$(TZ="Asia/Shanghai" date "+%H")
 
-          # success messages - chaotic energy
-          SUCCESS_MSGS=(
-            "claude is AWAKE and ready to vibe"
-            "quota tank: FULL. time to ship"
-            "both claudes stretching... let's go"
-            "pew pew pew. quotas locked and loaded"
-            "the AI hamsters are running"
-            "*aggressive typing noises*"
-            "claude.exe has started successfully"
-            "beep boop. humans may now vibe code"
-          )
-
-          # fail messages - dramatic
-          FAIL_MSGS=(
-            "claude is still sleeping smh"
-            "the hamsters stopped running"
-            "quota machine broke"
-            "F in chat"
-            "skill issue tbh"
-            "claude said no <3"
-          )
-
-          # time-based greetings
-          if [ "$HOUR" -lt 10 ]; then
-            GREETING="gm gm"
-          elif [ "$HOUR" -lt 15 ]; then
-            GREETING="afternoon grind"
+          if [ "$SUCCESS" = "true" ]; then
+            TITLE="$VICTIM @ $NOW"
           else
-            GREETING="night owl mode"
+            TITLE="$VICTIM ded @ $NOW"
           fi
 
-          # pick random message
-          if [ "$POKE_RESULT" = "success" ]; then
-            MSG="${SUCCESS_MSGS[$((RANDOM % ${#SUCCESS_MSGS[@]}))]}"
-            TITLE="$GREETING @ $NOW"
-          else
-            MSG="${FAIL_MSGS[$((RANDOM % ${#FAIL_MSGS[@]}))]}"
-            TITLE="bruh @ $NOW"
-          fi
+          # use claude's message, fallback if empty
+          BODY="${BARK_MSG:-claude said something but idk what}"
 
           TITLE_ENC=$(printf '%s' "$TITLE" | jq -sRr @uri)
-          BODY_ENC=$(printf '%s' "$MSG" | jq -sRr @uri)
+          BODY_ENC=$(printf '%s' "$BODY" | jq -sRr @uri)
 
           IFS=',' read -ra DEVICES <<< "$BARK_DEVICES"
           for device in "${DEVICES[@]}"; do
@@ -144,8 +109,20 @@ jobs:
             curl -s "${BARK_SERVER}/${device}/${TITLE_ENC}/${BODY_ENC}?group=quota&icon=https://claude.ai/favicon.ico" || true
           done
 
+          echo "barked: $BODY"
+
+  # each account barks for itself now with claude-generated messages
+  # this job just shows overall status in the workflow UI
+  status:
+    needs: poke
+    if: always()
+    runs-on: ubuntu-latest
+    name: "${{ needs.poke.result == 'success' && '✓ all poked' || '✗ something failed' }}"
+    steps:
+      - run: |
           echo ""
           echo "  /\\_/\\"
-          echo " ( o.o )  $MSG"
+          echo " ( o.o )  poke session complete"
           echo "  > ^ <"
           echo ""
+          echo "result: ${{ needs.poke.result }}"
