@@ -100,7 +100,7 @@ and if it fails:
 - "skill issue tbh"
 - "claude said no <3"
 
-requires `BARK_SERVER` and `BARK_DEVICES` secrets. no bark? no problem. it just won't bark.
+requires `BARK_SERVER` and `BARK_KEY` secrets (uses [barkme.sh](https://github.com/thevibeworks/yolo-tools)). no bark? no problem. it just won't bark.
 
 ## faq
 

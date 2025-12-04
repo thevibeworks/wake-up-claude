@@ -96,14 +96,10 @@ jobs:
           NOW=$(TZ="Asia/Shanghai" date "+%H:%M")
           BODY="${BARK_MSG:-woke up}"
 
-          echo "debug: server=$BARK_SERVER key=$BARK_KEY"
-          echo "debug: body=$BODY"
-
-          # retry 3 times with verbose
           if [ "$SUCCESS" = "true" ]; then
-            /tmp/barkme.sh -R 3 -t "$VICTIM @ $NOW" -g "quota" -i "https://claude.ai/favicon.ico" "$BODY" || echo "bark failed but continuing"
+            /tmp/barkme.sh -R 3 -t "$VICTIM @ $NOW" -g "quota" -i "https://claude.ai/favicon.ico" "$BODY" || true
           else
-            /tmp/barkme.sh -R 3 -t "$VICTIM ded @ $NOW" -g "quota" -l "timeSensitive" "$BODY" || echo "bark failed but continuing"
+            /tmp/barkme.sh -R 3 -t "$VICTIM ded @ $NOW" -g "quota" -l "timeSensitive" "$BODY" || true
           fi
 
   # each account barks for itself now with claude-generated messages
